@@ -5,13 +5,29 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+    <Authors>Marcel Rehkemper</Authors>
+    <Company>Cargo Support</Company>
+    <Product>CommentBoxer</Product>
+    <PackageIcon>logo.png</PackageIcon>
+    <ApplicationIcon>logo.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="logo.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MaterialDesignThemes" Version="4.5.0" />
     <PackageReference Include="ReactiveUI" Version="18.0.10" />
     <PackageReference Include="ReactiveUI.Fody" Version="18.0.10" />
     <PackageReference Include="ReactiveUI.WPF" Version="18.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="logo.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -48,7 +48,7 @@
                   Grid.Row="1"
                   Grid.Column="1"/>
 
-
+        
         <TextBox Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}"
                  FontFamily="Cascadia Mono"
                  AcceptsReturn="True"
