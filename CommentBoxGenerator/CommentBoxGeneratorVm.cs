@@ -65,18 +65,38 @@ public record BoxSettings(
 
 public enum LineStyle : byte
 {
-    Light = 00,
-    Double = 50,
-    TripleDashed = 4,
-    QuadDashed = 8,
+    Solid = 0b0000_0000,
+    //Double = 0b0000,
+    TripleDashed = 0b0000_0100,
+    QuadDashed = 0b0000_1000,
 }
-
+public enum DashStyle : byte
+{
+    Tripple = 0b0000_0000,
+    Quadruple = 0b0000_0010
+}
+public enum LineDirection : byte
+{
+    Horizontal = LineSection.Horizontal,
+    Vertical = LineSection.Vertical
+}
 public enum LineThickness : byte
 {
     Light = 0b0,
     Heavy = 0b1
 }
+public class LineDefinition
+{
+    public LineStyle Style { get; set; } = LineStyle.Solid;
+    public LineThickness Thickness { get; set; } = LineThickness.Light;
 
+    public string GetStraight(LineDirection direction)
+    {
+        var symbol = (byte)direction | (byte)Style | (byte)Thickness;
+        return char.ConvertFromUtf32(UnicodeRanges.BoxDrawing.FirstCodePoint + symbol);
+
+    }
+}
 public enum LineSection : byte
 {
     Horizontal = 0b_0000_0000,
@@ -88,32 +108,32 @@ public enum LineSection : byte
     LowerRight = 0b__0001_1000,
 }
 
-public class Box
+public class UnicodeBox
 {
-    public LineThickness Left { get; set; }
-    public LineThickness Right { get; set; }
-    public LineThickness Top { get; set; }
-    public LineThickness Bottom { get; set; }
+    public LineDefinition Left { get; set; } = new();
+    public LineDefinition Right { get; set; } = new();
+    public LineDefinition Top { get; set; } = new();
+    public LineDefinition Bottom { get; set; } = new();
     public ushort Width { get; set; }
     public ushort Height { get; set; }
 
     public string UpperRight
-        => ToUnicode((byte)LineSection.UpperRight | ((byte)Top) | (byte)Right << 1);
+        => GetUnicode((byte)LineSection.UpperRight | (byte)Right.Thickness << 1 | (byte)Top.Thickness);
     public string UpperLeft
-        => ToUnicode((byte)LineSection.UpperLeft | ((byte)Top) | (byte)Left << 1);
+        => GetUnicode((byte)LineSection.UpperLeft | (byte)Left.Thickness << 1 | (byte)Top.Thickness);
     public string LowerRight
-        => ToUnicode((byte)LineSection.LowerRight | ((byte)Bottom) | (byte)Right << 1);
+        => GetUnicode((byte)LineSection.LowerRight | (byte)Right.Thickness << 1 | (byte)Bottom.Thickness);
     public string LowerLeft
-        => ToUnicode((byte)LineSection.LowerLeft | ((byte)Bottom) | (byte)Left << 1);
+        => GetUnicode((byte)LineSection.LowerLeft | (byte)Left.Thickness << 1 | (byte)Bottom.Thickness);
 
     public string TopLine
-        => ToUnicode((byte)LineSection.Horizontal | (byte)Top);
+        => Top.GetStraight(LineDirection.Horizontal);
     public string BottomLine
-        => ToUnicode((byte)LineSection.Horizontal | (byte)Bottom);
+        => Bottom.GetStraight(LineDirection.Horizontal);
     public string LeftLine
-        => ToUnicode((byte)LineSection.Vertical | (byte)Left);
+        => Left.GetStraight(LineDirection.Vertical);
     public string RightLine
-        => ToUnicode((byte)LineSection.Vertical | (byte)Right);
+        => Right.GetStraight(LineDirection.Vertical);
 
     public string BoxString
         => new StringBuilder()
@@ -124,7 +144,7 @@ public class Box
             .Append(LowerLeft).Append(repeat(BottomLine, Width - 2)).Append(LowerRight).Append(Environment.NewLine)
             .ToString();
 
-    private string ToUnicode(int boxCharNumber)
+    private string GetUnicode(int boxCharNumber)
     {
         int offset = UnicodeRanges.BoxDrawing.FirstCodePoint;
         return char.ConvertFromUtf32(offset + boxCharNumber);
@@ -143,7 +163,7 @@ public record LineConfig
     public LineConfig(LineStyle style, LineThickness thickness = LineThickness.Light)
     {
         this.Style = style;
-        this.Thickness = style == LineStyle.Double
+        this.Thickness = style == LineStyle.Solid
             ? LineThickness.Light
             : thickness;
     }
@@ -175,10 +195,10 @@ public class BoxMapper
         return char.ConvertFromUtf32(result);
     }
 
-    public LineStyle Left { get; set; } = LineStyle.Light;
-    public LineStyle Right { get; set; } = LineStyle.Light;
-    public LineStyle Top { get; set; } = LineStyle.Light;
-    public LineStyle Bottom { get; set; } = LineStyle.Light;
+    public LineStyle Left { get; set; } = LineStyle.Solid;
+    public LineStyle Right { get; set; } = LineStyle.Solid;
+    public LineStyle Top { get; set; } = LineStyle.Solid;
+    public LineStyle Bottom { get; set; } = LineStyle.Solid;
 }
 
 internal class CommentBoxGeneratorVm : ReactiveObject
@@ -206,15 +226,31 @@ internal class CommentBoxGeneratorVm : ReactiveObject
             (minWidth, padding, content, isComment, boxSettingsVm, isCentered) =>
                 boxSettingsVm.SettingsChanges.Select(boxSettings =>
                 {
-                    //return new Box()
-                    //{
-                    //    Width = 10,
-                    //    Height = 10,
-                    //    Top = LineThickness.Light,
-                    //    Bottom = LineThickness.Light,
-                    //    Left = LineThickness.Light,
-                    //    Right = LineThickness.Heavy
-                    //}.BoxString;
+                    return new UnicodeBox()
+                    {
+                        Width = 10,
+                        Height = 10,
+                        Top = new()
+                        {
+                            Thickness = LineThickness.Light,
+                            Style = LineStyle.Solid,
+                        },
+                        Bottom = new()
+                        {
+                            Thickness = LineThickness.Light,
+                            Style = LineStyle.QuadDashed,
+                        },
+                        Left = new()
+                        {
+                            Thickness = LineThickness.Light,
+                            Style = LineStyle.TripleDashed,
+                        },
+                        Right = new()
+                        {
+                            Thickness = LineThickness.Heavy,
+                            Style = LineStyle.QuadDashed
+                        },
+                    }.BoxString;
 
 
                     var lines = content.Split(Environment.NewLine);
